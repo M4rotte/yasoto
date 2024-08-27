@@ -32,7 +32,13 @@ output_directory="${YASOTO_SOXFILE_DIRECTORY:-.}"          # Where do we put the
 
 help () {
     cat<<EOF
-Usage: $(basename "${0}") <sample file> <tempo> <loops> <snap> <SoX effects> [ <pattern item> … ]
+Usage: $(basename "${0}") <sample file> <tempo> <loops> <snap> <SoX effects> [ <pattern item> <pattern item> … ]
+
+Examples:
+
+    $(basename "${0}") sample.wav 120 8 1 ''
+    $(basename "${0}") sample.wav 120 8 1 'overdrive 20' '2,0,3' '.5,0,4'
+
 EOF
 }
 
