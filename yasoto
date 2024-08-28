@@ -83,6 +83,10 @@ eval_fx () {
             shift
             echo "Rise FX with args: ${@}" >&2
         ;;
+        pitch)
+            shift
+            echo "Pitch FX with args: ${@}" >&2
+        ;;
         *) echo_b "${1}: Unknown FX!" >&2
     esac
 }
@@ -94,7 +98,7 @@ sox_item () {
     at="$(bc "${at}%${len}" "0")" # In case provided "at" value is more than "len" ## TODO: Forbid the case? Turn to at=0? Would save a call to bc
     len_len="$(randomize "$(bc "${len}*${beat_length}")" "${randomize_prct}")"
     at_len="$(randomize "$(bc "${at}*${beat_length}")" "${randomize_prct}")"
-    [[ "${fx}" ]] && IFS=' ' fx_sox="$(eval_fx ${fx})"
+    [[ "${fx}" ]] && IFS=' ' fx_sox="$(eval_fx ${fx} ${len_len})"
     local len_diff="$(bc "${sample_length}-(${len_len}-${at_len})")"
     if [[ "$(bc "${len_diff}>=0")" -eq 1 ]]; then
         # Sample is long enough, trim it
