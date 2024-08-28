@@ -1,0 +1,31 @@
+#!/bin/bash
+set -bueo pipefail
+IFS=$'\t\n'
+
+sadi="/home/stef/Samples-cleaned/"
+rafi () { find "${sadi}" -regextype egrep -iregex ".*${1}.*" -print | shuf -n1; }
+
+while true; do
+    ./yasoto "$(rafi "kick")"              163 8 .125 'vol .20' '1,0,7'  '.25,0,4'               &
+    ./yasoto "$(rafi "(hh|hat)")"          163 8 .125 'vol .25' '1,.5,7' '.25,.5,4'              &
+    ./yasoto "$(rafi "snare")"             163 4 .125 'vol .25' '2,1,6'  '.5,.5,2'   '.25,1,4'   &
+    ./yasoto "$(rafi "(tom|attack)")"      163 3 .125 'vol .25' '3,0,4'  '.33,0,6'               &
+    wait -f
+    ./yasoto "$(rafi "kick")"              163 2 .125 'vol .20' '1,0,1'  '.5,0,4'                &
+    ./yasoto "$(rafi "(hat|cym)")"         163 1 .125 'vol .25' '4,.5,7' '.25,.5,4'              &
+    ./yasoto "$(rafi "(tom|attack)")"      163 1 .125 'vol .25' '6,0,2'  '.33,0,5'  '.33,.66,3'  &
+    wait -f
+    ./yasoto "$(rafi "kick")"              163 8 .125 'vol .20' '1,0,7'  '.5,0,2'                &
+    ./yasoto "$(rafi "(hh|hat)")"          163 8 .125 'vol .25' '1,.5,7' '.25,.5,4'              &
+    ./yasoto "$(rafi "snare")"             163 4 .125 'vol .25' '2,1,6'  '.5,.5,2'   '.25,1,4'   &
+    ./yasoto "$(rafi "(tom|attack)")"      163 3 .125 'vol .25' '3,0,4'  '.33,0,6'               &
+    wait -f
+    ./yasoto "$(rafi "kick")"              163 2 .125 'vol .20' '1,0,1'  '.5,0,4'                &
+    ./yasoto "$(rafi "(tom|attack)")"      163 1 .125 'vol .30' '3,0,2'  '.33,0,5'  '.33,.66,3'  &
+    ./yasoto "$(rafi "(tom|attack)")"      163 1 .125 'vol .30' '4,.5,3'  '.2,0,2'               &
+    wait -f
+
+echo "##### $(date) #########" >&2
+
+done
+

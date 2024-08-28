@@ -1,0 +1,19 @@
+#!/bin/bash
+set -bueo pipefail
+IFS=$'\t\n'
+export YASOTO_RANDOMIZE_PRCT=3
+sadi="/home/stef/Samples-cleaned/"
+rafi () { find "${sadi}" -regextype egrep -iregex ".*${1}.*" -print | shuf -n1; }
+i=0
+while true; do
+    ./yasoto "$(rafi "kick")"              153 3 0 'vol .2' '1,0,8'     &
+    ./yasoto "$(rafi "(hh|hat)")"          153 3 0 'vol .2' '1,.5,7'    &
+    ./yasoto "$(rafi "snare")"             153 2 0 'vol .2' '2,1,6'     &
+    ./yasoto "$(rafi "(tom|rim)")"      153 4 0 'vol .2' '3,1,2'     &
+
+    wait -f
+
+echo "##### $(date) [$((++i))] #########" >&2
+
+done
+
