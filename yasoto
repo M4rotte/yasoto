@@ -77,13 +77,24 @@ else
     end_replay_file    () { :; }
 fi
 
+eval_fx () {
+    case "${1}" in
+        rise)
+            shift
+            echo "Rise FX with args: ${@}" >&2
+        ;;
+        *) echo_b "${1}: Unknown FX!" >&2
+    esac
+}
+
 sox_item () {
     # Triplet: len,at,num
-    IFS=',' read -r len at num < <(echo "${1:-1,0,1}")
-    # TODO check args: they are two or three, len and at are decimal, num is integer. All three positive
+    IFS=',' read -r len at num fx < <(echo "${1:-1,0,1,}")
+    # TODO check args: they are two or three, "len" and "at" are decimal, "num" is integer. All three positive. "fx" isn’t SoX commands but ad-hoc effects which will generate some.
     at="$(bc "${at}%${len}" "0")" # In case provided "at" value is more than "len" ## TODO: Forbid the case? Turn to at=0? Would save a call to bc
     len_len="$(randomize "$(bc "${len}*${beat_length}")" "${randomize_prct}")"
     at_len="$(randomize "$(bc "${at}*${beat_length}")" "${randomize_prct}")"
+    [[ "${fx}" ]] && IFS=' ' fx_sox="$(eval_fx ${fx})"
     local len_diff="$(bc "${sample_length}-(${len_len}-${at_len})")"
     if [[ "$(bc "${len_diff}>=0")" -eq 1 ]]; then
         # Sample is long enough, trim it
@@ -108,7 +119,7 @@ while [[ $((loop_index++)) -lt "${nb_loops}" ]]; do
         sleep_time=0
     fi
     for item in "${@}"; do
-        start_time="$(now)"
+        #~ start_time="$(now)"
         sox_cmd="${sox_call} \""${sample_file}"\" ${audio_output} "
         sox_cmd+="$(sox_item "${item}") "
         sox_cmd+="pad ${sleep_time} "
@@ -116,7 +127,7 @@ while [[ $((loop_index++)) -lt "${nb_loops}" ]]; do
         eval "${sox_cmd}" &
         echo_b "[${loop_index}/${nb_loops}] ${sox_cmd}" >&2
         add_to_replay_file "<(${sox_cmd/ $audio_output / -t sox - }) \\"
-        echo Elapsed: $(( $(now) - start_time )) >&2
+        #~ echo Elapsed: $(( $(now) - start_time )) >&2
         wait -n -f
         end_replay_file
     done
