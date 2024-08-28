@@ -34,6 +34,8 @@ sox_call="${YASOTO_SOX_CALL:-/usr/bin/sox -q}"             # How do we call SoX.
 create_replay_file="${YASOTO_CREATE_REPLAY_FILE:-false}"   # Do not create a SoX “replay” file unless told explicitly with YASOTO_CREATE_REPLAY_FILE=true.
 output_directory="${YASOTO_SOXFILE_DIRECTORY:-.}"          # Where do we put the SoX file (ie: Bash script that can be executed later).
 randomize_prct="${YASOTO_RANDOMIZE_PRCT:-5}"               # Randomize by 5% maximum (ie: from -5 to +5 % for "len" and "at")
+smoothing_in_prct="${YASOTO_SMOOTHING_IN_PRCT:-1}"         # Smoothing fade-in (percent of beat length)
+smoothing_out_prct="${YASOTO_SMOOTHING_OUT_PRCT:-2}"       # Smoothing fade-out (percent of beat length)
 
 help () {
     cat<<EOF
@@ -61,6 +63,8 @@ shift 5
 declare sample_length="$(sox --i -D "${sample_file}")"
 declare beat_length="$(bc "1/(${tempo}/60)")"
 declare T="$(LANG=C printf "%2.0f\n" "$(bc "${snap_beat}*${beat_length}*1000000")")"
+declare smoothing_in="$(bc "${smoothing_in_prct}*${beat_length}/100")"
+declare smoothing_out="$(bc "${smoothing_out_prct}*${beat_length}/100")"
 
 if [[ "${create_replay_file}" = "true" ]]; then
     declare replay_filename="${output_directory}/$(now)-${BASHPID}-$(uniq_id "${sample_file}").sox"
@@ -83,10 +87,10 @@ sox_item () {
     local len_diff="$(bc "${sample_length}-(${len_len}-${at_len})")"
     if [[ "$(bc "${len_diff}>=0")" -eq 1 ]]; then
         # Sample is long enough, trim it
-        echo "trim 0 $(bc "${sample_length}-${len_diff}") pad ${at_len} repeat $((num-1))"
+        echo "trim 0 $(bc "${sample_length}-${len_diff}") pad ${at_len} repeat $((num-1)) fade ${smoothing_in} 0 ${smoothing_out} "
     else
         # Sample is too short, end-pad it
-        echo "pad 0 ${len_diff/-/} pad ${at_len} repeat $((num-1))"
+        echo "pad 0 ${len_diff/-/} pad ${at_len} repeat $((num-1)) fade ${smoothing_in} 0 ${smoothing_out} "
     fi
 }
 
@@ -104,15 +108,15 @@ while [[ $((loop_index++)) -lt "${nb_loops}" ]]; do
         sleep_time=0
     fi
     for item in "${@}"; do
-        #~ start_time="$(now)"
+        start_time="$(now)"
         sox_cmd="${sox_call} \""${sample_file}"\" ${audio_output} "
         sox_cmd+="$(sox_item "${item}") "
         sox_cmd+="pad ${sleep_time} "
-        [[ "${more_sox}" ]] && sox_cmd+="${more_sox}"
+        [[ "${more_sox}" ]] && sox_cmd+="fade ${smoothing_in} 0 ${smoothing_out} ${more_sox} fade ${smoothing_in}"
         eval "${sox_cmd}" &
         echo_b "[${loop_index}/${nb_loops}] ${sox_cmd}" >&2
         add_to_replay_file "<(${sox_cmd/ $audio_output / -t sox - }) \\"
-        #~ echo Elapsed: $(( $(now) - start_time )) >&2
+        echo Elapsed: $(( $(now) - start_time )) >&2
         wait -n -f
         end_replay_file
     done
