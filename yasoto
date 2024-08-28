@@ -78,14 +78,15 @@ else
 fi
 
 eval_fx () {
-    case "${1}" in
+    local fx="${1}"
+    shift
+    local len="${@:$#}"
+    case "${fx}" in
         rise)
-            shift
-            echo "Rise FX with args: ${@}" >&2
+            echo "Rise FX for length ${len} with args: ${@:1:$(($#-1))}" >&2
         ;;
         pitch)
-            shift
-            echo "Pitch FX with args: ${@}" >&2
+            echo "Pitch FX for length ${len} with args: ${@:1:$(($#-1))}" >&2
         ;;
         *) echo_b "${1}: Unknown FX!" >&2
     esac
