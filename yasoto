@@ -13,11 +13,15 @@ terminate () { unlink "${bc_pipe}"; }
 uniq_id   () { echo "${1}" | cksum -a crc | tr ' ' '_'; }
 #~ is_int    () { [[ "${1}" =~ ^-?[0-9]+$ ]]; }
 #~ is_num    () { [[ "${1}" =~ ^-?[0-9]*\.?[0-9]+$ ]]; }
-
+rani      () { seq "-${2:-$1}" "${1:-1}" 2>/dev/null | shuf -n1; }
 
 declare   bc_pipe="/tmp/bc_pipe_${BASHPID}"
 init_bc   () { [[ -p "${bc_pipe}" ]] || mkfifo "${bc_pipe}"; exec 5> >(exec /usr/bin/bc -lq <(echo "scale=9") >"${bc_pipe}"); exec 6<"${bc_pipe}"; }
 bc        () { echo >&5 "scale=${2:-12};${1:-0}"; read -u 6 x; echo "${x}"; }
+
+randomize () {
+    bc "${1}+(${1}*$(rani "${2}")/100)"
+}
 
 declare audio_output
 declare file_output
@@ -30,6 +34,7 @@ file_output="${YASOTO_FILE_OUTPUT:--t flac}"
 sox_call="${YASOTO_SOX_CALL:-/usr/bin/sox -q}"             # How do we call SoX.
 create_replay_file="${YASOTO_CREATE_REPLAY_FILE:-false}"   # Do not create a SoX “replay” file unless told explicitly with YASOTO_CREATE_REPLAY_FILE=true.
 output_directory="${YASOTO_SOXFILE_DIRECTORY:-.}"          # Where do we put the SoX file (ie: Bash script that can be executed later).
+randomize_prct="${YASOTO_RANDOMIZE_PRCT:-5}"               # Randomize by 5% maximum (ie: from -5 to +5 % for "len" and "at")
 
 help () {
     cat<<EOF
@@ -74,8 +79,8 @@ sox_item () {
     IFS=',' read -r len at num < <(echo "${1:-1,0,1}")
     # TODO check args: they are two or three, len and at are decimal, num is integer. All three positive
     at="$(bc "${at}%${len}" "0")" # In case provided "at" value is more than "len" ## TODO: Forbid the case? Turn to at=0? Would save a call to bc
-    len_len="$(bc "${len}*${beat_length}")"
-    at_len="$(bc "${at}*${beat_length}")"
+    len_len="$(randomize "$(bc "${len}*${beat_length}")" "${randomize_prct}")"
+    at_len="$(randomize "$(bc "${at}*${beat_length}")" "${randomize_prct}")"
     local len_diff="$(bc "${sample_length}-(${len_len}-${at_len})")"
     if [[ "$(bc "${len_diff}>=0")" -eq 1 ]]; then
         # Sample is long enough, trim it
