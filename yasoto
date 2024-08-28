@@ -2,7 +2,6 @@
 # TODO: For snapping, should the splice length be deduced from the pad length?
 IFS=$'\t\n'
 set -bmueo pipefail
-
 now       () { echo "${EPOCHREALTIME/[,.]/}"; }
 #~ rr        () { tr -cd "${1:-0-9}" < /dev/urandom > >(head -c"${2:-1}") || true; }
 #~ ranel     () { echo "$(tr ' ' '\n' < <(echo "${@}") | shuf -n1)"; } # Random element from array
@@ -105,6 +104,7 @@ while [[ $((loop_index++)) -lt "${nb_loops}" ]]; do
         sleep_time=0
     fi
     for item in "${@}"; do
+        #~ start_time="$(now)"
         sox_cmd="${sox_call} \""${sample_file}"\" ${audio_output} "
         sox_cmd+="$(sox_item "${item}") "
         sox_cmd+="pad ${sleep_time} "
@@ -112,7 +112,9 @@ while [[ $((loop_index++)) -lt "${nb_loops}" ]]; do
         eval "${sox_cmd}" &
         echo_b "[${loop_index}/${nb_loops}] ${sox_cmd}" >&2
         add_to_replay_file "<(${sox_cmd/ $audio_output / -t sox - }) \\"
+        #~ echo Elapsed: $(( $(now) - start_time )) >&2
         wait -n -f
         end_replay_file
     done
 done
+
