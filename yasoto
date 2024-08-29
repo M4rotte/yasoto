@@ -86,11 +86,11 @@ eval_fx () {
     local len="${@:$#}"
     case "${fx}" in
         rise)
-            echo_y "Rise FX for length ${len} with args: ${@:1:$(($#-1))}" >&2
+            #~ echo_y "Rise FX for length ${len} with args: ${@:1:$(($#-1))}" >&2
             echo "vol .707 bend 0,${1},${len}"
         ;;
         pitch)
-            echo_y "Pitch FX for length ${len} with args: ${@:1:$(($#-1))}" >&2
+            #~ echo_y "Pitch FX for length ${len} with args: ${@:1:$(($#-1))}" >&2
             echo "vol .707 pitch ${1}"
         ;;
         *)
@@ -137,7 +137,7 @@ while [[ $((loop_index++)) -lt "${nb_loops}" ]]; do
         sox_cmd+="pad ${sleep_time} "
         [[ "${more_sox}" ]] && sox_cmd+="fade ${smoothing_in} 0 ${smoothing_out} ${more_sox} fade ${smoothing_in}"
         eval "${sox_cmd}" &
-        echo_g "[${loop_index}/${nb_loops}] ${sox_cmd}" >&2
+        #~ echo_g "[${loop_index}/${nb_loops}] ${sox_cmd}" >&2
         add_to_replay_file "<(${sox_cmd/ $audio_output / -t sox - }) \\"
         #~ echo_b "Start waiting after $(($(now) - start_time))μs" >&2
         wait -n -f
