@@ -87,11 +87,14 @@ eval_fx () {
     case "${fx}" in
         rise)
             echo_y "Rise FX for length ${len} with args: ${@:1:$(($#-1))}" >&2
+            echo "vol .707 bend 0,${1},${len}"
         ;;
         pitch)
             echo_y "Pitch FX for length ${len} with args: ${@:1:$(($#-1))}" >&2
+            echo "vol .707 pitch ${1}"
         ;;
-        *) echo_r "${1}: Unknown FX!" >&2
+        *)
+            echo_r "${1}: Unknown FX!" >&2
     esac
 }
 
@@ -103,14 +106,14 @@ sox_item () {
     local len_len="$(randomize "$(bc "${len}*${beat_length}")" "${randomize_prct}")"
     local at_len="$(randomize "$(bc "${at}*${beat_length}")" "${randomize_prct}")"
     local item_len="$(bc "(${len_len}+${at_len})*${num}")"
-    [[ "${fx}" ]] && IFS=' ' fx_sox="$(eval_fx ${fx} ${len_len})"
+    [[ "${fx}" ]] && IFS=' ' fx_sox="$(eval_fx ${fx} ${item_len})"
     local len_diff="$(bc "${sample_length}-(${len_len}-${at_len})")"
     if [[ "$(bc "${len_diff}>=0")" -eq 1 ]]; then
         # Sample is long enough, trim it
-        echo "trim 0 $(bc "${sample_length}-${len_diff}") pad ${at_len} repeat $((num-1)) fade ${smoothing_in} 0 ${smoothing_out} "
+        echo "trim 0 $(bc "${sample_length}-${len_diff}") pad ${at_len} repeat $((num-1)) ${fx_sox:-} fade ${smoothing_in} 0 ${smoothing_out} "
     else
         # Sample is too short, end-pad it
-        echo "pad 0 ${len_diff/-/} pad ${at_len} repeat $((num-1)) fade ${smoothing_in} 0 ${smoothing_out} "
+        echo "pad 0 ${len_diff/-/} pad ${at_len} repeat $((num-1)) ${fx_sox:-} fade ${smoothing_in} 0 ${smoothing_out} "
     fi
 }
 
