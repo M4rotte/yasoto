@@ -1,0 +1,3 @@
+# TODO
+
+tests/test_XX needs to check if directories exist, currently it get messy if this is not the case.
