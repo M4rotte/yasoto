@@ -87,7 +87,7 @@ eval_fx () {
     case "${fx}" in
         rise)
             #~ echo_y "Rise FX for length ${len} with args: ${@:1:$(($#-1))}" >&2
-            echo "vol .707 bend 0,${1},${len}"
+            echo "vol .707 bend 0,${1},$(bc "${len}*.5")"
         ;;
         pitch)
             #~ echo_y "Pitch FX for length ${len} with args: ${@:1:$(($#-1))}" >&2
@@ -105,7 +105,7 @@ sox_item () {
     at="$(bc "${at}%${len}" "0")" # In case provided "at" value is more than "len" ## TODO: Forbid the case? Turn to at=0? Would save a call to bc
     local len_len="$(randomize "$(bc "${len}*${beat_length}")" "${randomize_prct}")"
     local at_len="$(randomize "$(bc "${at}*${beat_length}")" "${randomize_prct}")"
-    local item_len="$(bc "(${len_len}+${at_len})*${num}")"
+    local item_len="$(bc "(${len_len}-${at_len})*${num}")"
     [[ "${fx}" ]] && IFS=' ' fx_sox="$(eval_fx ${fx} ${item_len})"
     local len_diff="$(bc "${sample_length}-(${len_len}-${at_len})")"
     if [[ "$(bc "${len_diff}>=0")" -eq 1 ]]; then
@@ -137,7 +137,7 @@ while [[ $((loop_index++)) -lt "${nb_loops}" ]]; do
         sox_cmd+="pad ${sleep_time} "
         [[ "${more_sox}" ]] && sox_cmd+="fade ${smoothing_in} 0 ${smoothing_out} ${more_sox} fade ${smoothing_in}"
         eval "${sox_cmd}" &
-        #~ echo_g "[${loop_index}/${nb_loops}] ${sox_cmd}" >&2
+        echo_g "[${loop_index}/${nb_loops}] ${sox_cmd}" >&2
         add_to_replay_file "<(${sox_cmd/ $audio_output / -t sox - }) \\"
         #~ echo_b "Start waiting after $(($(now) - start_time))μs" >&2
         wait -n -f
