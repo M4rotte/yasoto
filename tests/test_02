@@ -3,7 +3,7 @@ set -bueo pipefail
 IFS=$'\t\n'
 
 sadi="/home/stef/Samples-cleaned/"
-rafi () { find "${sadi}" -regextype egrep -iregex ".*${1}.*" -print | shuf -n1; }
+rafi () { find "${sadi}" -type f -regextype egrep -iregex ".*${1}.*" -print | shuf -n1; }
 
 while true; do
     ./yasoto "$(rafi "kick")"              163 8 .125 'vol .20' '1,0,7'  '.25,0,4'               &

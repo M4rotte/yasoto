@@ -6,7 +6,7 @@ export YASOTO_SMOOTHING_IN_PRCT=1
 export YASOTO_SMOOTHING_OUT_PRCT=2
 sadi1="/home/stef/Samples-cleaned/"
 sadi2="/home/stef/Samples-OK/StrangerLoops"
-rafi () { find "${1}" -regextype egrep -iregex ".*${2}.*" -print | shuf -n1; }
+rafi () { find "${1}" -type f -regextype egrep -iregex ".*${2}.*" -print | shuf -n1; }
 i=0
 while true; do
     ./yasoto "$(rafi "${sadi1}" "kick")"         153 3 0 'vol .21 overdrive 10 sinc 10-2000'                  '1,0,7'     '.25,0,4'  '1,.5,15'     '.25,0,2'   &
