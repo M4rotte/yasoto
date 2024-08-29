@@ -71,7 +71,7 @@ declare smoothing_out="$(bc "${smoothing_out_prct}*${beat_length}/100")"
 
 if [[ "${create_replay_file}" = "true" ]]; then
     declare replay_filename="${output_directory}/$(now)-${BASHPID}-$(uniq_id "${sample_file}").sox"
-    start_replay_file  () { echo -e "${sox_call} \\" > "${replay_filename}"; }
+    start_replay_file  () { echo -e "${sox_call} \\" >> "${replay_filename}"; }
     add_to_replay_file () { echo -e "${1}" >> "${replay_filename}"; }
     end_replay_file    () { echo -e "${audio_output}" >> "${replay_filename}"; }
 else
@@ -141,7 +141,6 @@ while [[ $((loop_index++)) -lt "${nb_loops}" ]]; do
         add_to_replay_file "<(${sox_cmd/ $audio_output / -t sox - }) \\"
         #~ echo_b "Start waiting after $(($(now) - start_time))μs" >&2
         wait -n -f
-        end_replay_file
     done
 done
-
+end_replay_file
