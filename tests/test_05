@@ -1,9 +1,9 @@
 #!/bin/bash
 set -bueo pipefail
 IFS=$'\t\n'
-export YASOTO_RANDOMIZE_PRCT=7
-export YASOTO_SMOOTHING_IN_PRCT=1
-export YASOTO_SMOOTHING_OUT_PRCT=2
+export YASOTO_RANDOMIZE_PRCT=2
+export YASOTO_SMOOTHING_IN_PRCT=2
+export YASOTO_SMOOTHING_OUT_PRCT=4
 sadi1="/home/stef/Samples-cleaned/"
 sadi2="/home/stef/Samples-OK/StrangerLoops"
 rafi () { find "${1}" -regextype egrep -iregex ".*${2}.*" -print | shuf -n1; }
@@ -17,7 +17,7 @@ while true; do
     ./yasoto "$(rafi "${sadi1}" "(worker)")"     144 10 .0417 'vol .22 reverse reverb 80 50'                       '3,.666,2'            '6,0,2,rise 0'      '3,.666,2'                                           &
     ./yasoto "$(rafi "${sadi1}" "(attack)")"     144 12 .0417 'vol .12 echos 0.8 0.6 300 0.8'                      '5,.5,1'              '5,.5,1,shit'                                                            &
     ./yasoto "$(rafi "${sadi1}" "(build)")"      144 12 .0417 'vol .12 echos 0.8 0.6 600 0.6'                      '5,.5,1'              '5,.5,1,'                                                                &
-    ./yasoto "$(rafi "${sadi2}" "")"             144 24 .0417 'vol .13 reverb 20 15 overdrive 5 50'                '3,0,1,pitch plop'    '.75,.25,2'         '5,0,1,pitch 36'                                     &
+    ./yasoto "$(rafi "${sadi2}" "")"             144 24 .0417 'vol .10 reverb 20 15 overdrive 5 50'                '3,0,1,pitch plop'    '.75,.25,2'         '5,0,1,pitch 36'                                     &
     wait -f
 
 echo "##### $(date) [$((++i))] #########" >&2
