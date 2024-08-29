@@ -2,7 +2,7 @@
 set -bueo pipefail
 IFS=$'\t\n'
 
-sadi="/home/stef/Samples-cleaned/"
+sadi="/home/stef/Samples/"
 rafi () { find "${sadi}" -type f -regextype egrep -iregex ".*${1}.*" -print | shuf -n1; }
 
 while true; do

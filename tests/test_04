@@ -4,7 +4,7 @@ IFS=$'\t\n'
 export YASOTO_RANDOMIZE_PRCT=3
 export YASOTO_SMOOTHING_IN_PRCT=1
 export YASOTO_SMOOTHING_OUT_PRCT=2
-sadi1="/home/stef/Samples-cleaned/"
+sadi1="/home/stef/Samples/"
 sadi2="/home/stef/Samples-OK/StrangerLoops"
 rafi () { find "${1}" -type f -regextype egrep -iregex ".*${2}.*" -print | shuf -n1; }
 i=0
