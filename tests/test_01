@@ -6,9 +6,9 @@ sadi="/home/stef/Samples/"
 rafi () { find "${sadi}" -type f -regextype egrep -iregex ".*${1}.*" -print | shuf -n1; }
 
 while true; do
-    ./yasoto "$(rafi "kick")"     150 8 0 'vol .25' '1,0,7'  '.25,0,4'             &
-    ./yasoto "$(rafi "(hh|hat)")" 150 8 0 'vol .25' '1,.5,7' '.25,.5,4'            &
-    ./yasoto "$(rafi "snare")"    150 4 0 'vol .25' '2,1,6'  '.5,.5,2'   '.25,1,4' &
+    ./yasoto "$(rafi "kick")"           150 8 0 'vol .25' '1,0,7'  '.25,0,4'             &
+    ./yasoto "$(rafi "(hh|hat)")"       150 8 0 'vol .25' '1,.5,7' '.25,.5,4'            &
+    ./yasoto "$(rafi "snare")"          150 4 0 'vol .25' '2,1,6'  '.5,.5,2'   '.25,1,4' &
     ./yasoto "$(rafi "(tom|ack)")"      150 3 0 'vol .25' '3,0,4'  '.33,0,6'       &
     wait -f
 done
