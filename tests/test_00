@@ -5,16 +5,19 @@ IFS=$'\t\n'
 #~ sadi="/home/stef/Samples/"
 #~ rafi () { find "${sadi}" -type f -regextype egrep -iregex ".*${1}.*" -print | shuf -n1; }
 ranint () { /usr/bin/bc < <(echo "scale=0;${1:-0}+($(tr -d --complement '0-9' <  <(head -n6  /dev/urandom))%((${2:-1}-${1:-0}))+1)"); }
-export YASOTO_CREATE_REPLAY_FILE=true
+export YASOTO_CREATE_REPLAY_FILE=false
 export YASOTO_RANDOMIZE_PRCT=1
 
 declare -i i=-1;
 while [[ $((i++)) -lt 100 ]]; do
-    ./yasoto /tmp/88821/kick/kick_151675_$(ranint 0 56).flac 145 2 0 'vol .08 overdrive 1' '1,0,23' '.5,0,1' '.25,0,2'  &
-    ./yasoto /tmp/88821/bass/bass_148694_$(ranint 0 56).flac 145 2 0 'vol .04 overdrive 1' '2,.5,4' '1,.5,14' '2,.5,1,rise 1200'  &
-    ./yasoto /tmp/88821/hat/hat_151973_$(ranint 0 56).flac 145 2 0 'vol .04 overdrive 1' '1,.5,20' '1,.5,2'  '.5,.5,4'  &
-    ./yasoto /tmp/88821/snare/snare_147874_$(ranint 0 56).flac 145 2 0 'vol .05 overdrive 1' '4,1,1' '2,1,9' '2,1,1'   &
-    ./yasoto /tmp/88821/tom/tom_148972_$(ranint 0 40).flac  145 2 0 'vol .05 overdrive 1' '3,0,4' '3,0,1'    '1.5,0,2,rise -2400' &
+    ./yasoto ./set1~/kick/kick_*_$(ranint 0 56).flac 145 2 1 'vol .1 overdrive 1' '1,0,23' '.5,0,1' '.25,0,2'  &
+    ./yasoto ./set1~/bass/bass_*_$(ranint 0 30).flac 145 2 1 'vol .1 overdrive 1' '2,.5,4' '1,.5,14' '2,.5,1,rise 1200'  &
+    ./yasoto ./set1~/hat/hat_*_$(ranint 0 56).flac 145 2 1 'vol .1 overdrive 1' '1,.5,20' '1,.5,2'  '.5,.5,4'  &
+    ./yasoto ./set1~/snare/snare_*_$(ranint 0 56).flac 145 2 1 'vol .1 overdrive 1' '4,1,1' '2,1,9' '2,1,1'   &
+    ./yasoto ./set1~/tom/tom_*_$(ranint 0 40).flac  145 2 1 'vol .1 overdrive 1' '3,0,4' '3,0,1'    '1.5,0,2,rise -2400' &
+    wait -f
+    ./yasoto ./set1~/bass/bass_*_$(ranint 0 30).flac 145 1 1 'vol .2 overdrive 0' '1,.5,8,rise 2400'  &
+    ./yasoto ./set1~/tom/tom_*_$(ranint 0 40).flac  145 1 1 'vol .2 overdrive 1' '3,0,2' '2,0,1,rise 4800' &
     wait -f
 done
 
