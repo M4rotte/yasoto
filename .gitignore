@@ -4,4 +4,4 @@
 *.wav
 *.mp3
 *.geany
-tests/test_000
+tests/test_000*
