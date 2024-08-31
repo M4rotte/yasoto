@@ -15,7 +15,7 @@ terminate () { unlink "${bc_pipe}"; }
 uniq_id   () { echo "${1}" | cksum -a crc | tr ' ' '_'; }
 #~ is_int    () { [[ "${1}" =~ ^-?[0-9]+$ ]]; }
 #~ is_num    () { [[ "${1}" =~ ^-?[0-9]*\.?[0-9]+$ ]]; }
-rani      () { seq "-${2:-$1}" "${1:-1}" 2>/dev/null | shuf -n1; }
+rani         () { seq "-${1:-0}" "${2:-1}" 2>/dev/null | shuf -n1; }
 
 declare   bc_pipe="/tmp/bc_pipe_${BASHPID}"
 init_bc   () { [[ -p "${bc_pipe}" ]] || mkfifo "${bc_pipe}"; exec 5> >(exec /usr/bin/bc -lq <(echo "scale=9") >"${bc_pipe}"); exec 6<"${bc_pipe}"; }
