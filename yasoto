@@ -87,7 +87,7 @@ eval_fx () {
     case "${fx}" in
         rise)
             #~ echo_y "Rise FX for length ${len} with args: ${@:1:$(($#-1))}" >&2
-            echo "vol .707 bend 0,${1},$(bc "${len}*.5")"
+            echo "vol .666 bend 0,${1},$(bc "${len}*.9")"
         ;;
         pitch)
             #~ echo_y "Pitch FX for length ${len} with args: ${@:1:$(($#-1))}" >&2
