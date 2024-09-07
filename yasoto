@@ -34,7 +34,7 @@ declare output_directory
 audio_output="${YASOTO_AUDIO_OUTPUT:--t alsa}"             # Default ALSA device is the default audio output.
 file_output="${YASOTO_FILE_OUTPUT:--t flac}"
 sox_call="${YASOTO_SOX_CALL:-/usr/bin/sox -q}"             # How do we call SoX.
-create_replay_file="${YASOTO_CREATE_REPLAY_FILE:-false}"   # Do not create a SoX “replay” file unless told explicitly with YASOTO_CREATE_REPLAY_FILE=true.
+create_replay_file="${YASOTO_CREATE_REPLAY_FILE:-false}"   # Do not create a SoX “replay” file unless told explicitly to do so.
 output_directory="${YASOTO_SOXFILE_DIRECTORY:-.}"          # Where do we put the SoX file (ie: Bash script that can be executed later).
 randomize_prct="${YASOTO_RANDOMIZE_PRCT:-5}"               # Randomize by 5% maximum (ie: from -5 to +5 % for "len" and "at")
 smoothing_in_prct="${YASOTO_SMOOTHING_IN_PRCT:-1}"         # Smoothing fade-in (percent of beat length)
@@ -43,6 +43,12 @@ smoothing_out_prct="${YASOTO_SMOOTHING_OUT_PRCT:-2}"       # Smoothing fade-out 
 help () {
     cat<<EOF
 Usage: $(basename "${0}") <sample file> <tempo> <loops> <snap> <SoX effects> [ <pattern item> <pattern item> … ]
+
+Pattern item is a triplet of the form "length,delay,number"
+
+ - length: length of the loop in beats
+ - delay:  delay before samples starts, 0 being no delay
+ - number: how may times it must play
 
 Examples:
 
@@ -110,10 +116,10 @@ sox_item () {
     local len_diff="$(bc "${sample_length}-(${len_len}-${at_len})")"
     if [[ "$(bc "${len_diff}>=0")" -eq 1 ]]; then
         # Sample is long enough, trim it
-        echo "trim 0 $(bc "${sample_length}-${len_diff}") pad ${at_len} repeat $((num-1)) ${fx_sox:-} fade ${smoothing_in} 0 ${smoothing_out} "
+        echo "trim 0 $(bc "${sample_length}-${len_diff}") fade ${smoothing_in} 0 ${smoothing_out} pad ${at_len} repeat $((num-1)) ${fx_sox:-} "
     else
         # Sample is too short, end-pad it
-        echo "pad 0 ${len_diff/-/} pad ${at_len} repeat $((num-1)) ${fx_sox:-} fade ${smoothing_in} 0 ${smoothing_out} "
+        echo "pad 0 ${len_diff/-/} fade ${smoothing_in} 0 ${smoothing_out} pad ${at_len}  repeat $((num-1)) ${fx_sox:-} "
     fi
 }
 
@@ -134,7 +140,7 @@ while [[ $((loop_index++)) -lt "${nb_loops}" ]]; do
         sox_cmd="${sox_call} \""${sample_file}"\" ${audio_output} "
         sox_cmd+="$(sox_item "${item}") "
         sox_cmd+="pad ${sleep_time} "
-        [[ "${more_sox}" ]] && sox_cmd+="fade ${smoothing_in} 0 ${smoothing_out} ${more_sox} fade ${smoothing_in}"
+        [[ "${more_sox}" ]] && sox_cmd+="${more_sox} "
         eval "${sox_cmd}" &
         echo_g "[${loop_index}/${nb_loops}] ${sox_cmd}" | cut -d' ' -f1,4,7- >&2
         add_to_replay_file "<(${sox_cmd/ $audio_output / -t sox - }) \\"
