@@ -7,14 +7,15 @@ now       () { echo "${EPOCHREALTIME/[,.]/}"; }
 #~ ranel     () { echo "$(tr ' ' '\n' < <(echo "${@}") | shuf -n1)"; } # Random element from array
 #~ relem     () { echo ${@:$((${EPOCHREALTIME/[,.]/}%${#}+1)):1}; } # Random arg from arg list
 #~ ranint    () { /usr/bin/bc < <(echo "scale=0;${1:-0}+($(tr -d --complement '0-9' <  <(head -n6  /dev/urandom))%((${2:-1}-${1:-0}))+1)"); }
-echo_b    () { echo -e "\e[1;38m${1:-}\e[m"; }
-echo_g    () { echo -e "\e[0;32m${1:-}\e[m"; }
-echo_y    () { echo -e "\e[0;33m${1:-}\e[m"; }
-echo_r    () { echo -e "\e[0;31m${1:-}\e[m"; }
-terminate () { unlink "${bc_pipe}"; }
-uniq_id   () { echo "${1}" | cksum -a crc | tr ' ' '_'; }
-#~ is_int    () { [[ "${1}" =~ ^-?[0-9]+$ ]]; }
-#~ is_num    () { [[ "${1}" =~ ^-?[0-9]*\.?[0-9]+$ ]]; }
+echo_bold    () { echo -e "\e[1;38m${1:-}\e[m"; }
+echo_blue_ul () { echo -e "\e[4;34m${1:-}\e[m"; }
+echo_green   () { echo -e "\e[0;32m${1:-}\e[m"; }
+echo_yellow  () { echo -e "\e[0;33m${1:-}\e[m"; }
+echo_red     () { echo -e "\e[0;31m${1:-}\e[m"; }
+terminate    () { unlink "${bc_pipe}"; }
+uniq_id      () { echo "${1}" | cksum -a crc | tr ' ' '_'; }
+#~ is_int      () { [[ "${1}" =~ ^-?[0-9]+$ ]]; }
+#~ is_num      () { [[ "${1}" =~ ^-?[0-9]*\.?[0-9]+$ ]]; }
 rani         () { seq "-${1:-0}" "${2:-1}" 2>/dev/null | shuf -n1; }
 
 declare   bc_pipe="/tmp/bc_pipe_${BASHPID}"
@@ -33,7 +34,7 @@ declare output_directory
 ### Environment modifiable variables ###
 audio_output="${YASOTO_AUDIO_OUTPUT:--t alsa}"             # Default ALSA device is the default audio output.
 file_output="${YASOTO_FILE_OUTPUT:--t flac}"
-sox_call="${YASOTO_SOX_CALL:-/usr/bin/sox -q}"             # How do we call SoX.
+sox_call="${YASOTO_SOX_CALL:-/usr/bin/sox -V0 -q}"         # How do we call SoX.
 create_replay_file="${YASOTO_CREATE_REPLAY_FILE:-false}"   # Do not create a SoX “replay” file unless told explicitly to do so.
 output_directory="${YASOTO_SOXFILE_DIRECTORY:-.}"          # Where do we put the SoX file (ie: Bash script that can be executed later).
 randomize_prct="${YASOTO_RANDOMIZE_PRCT:-5}"               # Randomize by 5% maximum (ie: from -5 to +5 % for "len" and "at")
@@ -92,15 +93,15 @@ eval_fx () {
     local len="${@:$#}"
     case "${fx}" in
         rise)
-            echo_y "Rise FX for length ${len} with args: ${@:1:$(($#-1))}" >&2
+            echo_yellow "Rise FX for length ${len} with args: ${@:1:$(($#-1))}" >&2
             echo "vol .666 bend 0,${1},$(bc "${len}*.9")"
         ;;
         pitch)
-            echo_y "Pitch FX for length ${len} with args: ${@:1:$(($#-1))}" >&2
+            echo_yellow "Pitch FX for length ${len} with args: ${@:1:$(($#-1))}" >&2
             echo "vol .707 pitch ${1}"
         ;;
         *)
-            echo_r "${1}: Unknown FX!" >&2
+            echo_red "${1}: Unknown FX!" >&2
     esac
 }
 
@@ -142,7 +143,7 @@ while [[ $((loop_index++)) -lt "${nb_loops}" ]]; do
         sox_cmd+="pad ${sleep_time} "
         [[ "${more_sox}" ]] && sox_cmd+="${more_sox} "
         eval "${sox_cmd}" &
-        echo_g "[${loop_index}/${nb_loops}] ${sox_cmd}" | cut -d' ' -f1,4,7- >&2
+        echo_green "[${loop_index}/${nb_loops}] ${sox_cmd}" | cut -d' ' -f1,4,7- >&2
         add_to_replay_file "<(${sox_cmd/ $audio_output / -t sox - }) \\"
         wait -n -f
     done
