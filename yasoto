@@ -75,9 +75,11 @@ declare beat_length="$(bc "1/(${tempo}/60)")"
 declare T="$(LANG=C printf "%2.0f\n" "$(bc "${snap_beat}*${beat_length}*1000000")")"
 declare smoothing_in="$(bc "${smoothing_in_prct}*${beat_length}/100")"
 declare smoothing_out="$(bc "${smoothing_out_prct}*${beat_length}/100")"
+declare replay_filename
 
 if [[ "${create_replay_file}" = "true" ]]; then
-    declare replay_filename="${output_directory}/$(now)-${BASHPID}-$(uniq_id "${sample_file}").sox"
+    #~ declare replay_filename="${output_directory}/$(now)-${BASHPID}-$(uniq_id "${sample_file}").sox"
+    replay_filename="${output_directory}/$(uniq_id "${sample_file}").sox"
     start_replay_file  () { echo -e "${sox_call} \\" >> "${replay_filename}"; }
     add_to_replay_file () { echo -e "${1}" >> "${replay_filename}"; }
     end_replay_file    () { echo -e "${audio_output}" >> "${replay_filename}"; }
@@ -125,11 +127,11 @@ sox_item () {
 }
 
 ### Main loop ###
-start_replay_file
 declare -i sleep_time_us
 declare sleep_time
 declare -i loop_index=0
 [[ "${#}" -eq 0 ]] && set - '1,0,1' # No pattern item provided, put the simplest possible (length is 1 beat, start at 0, 1 note only)
+start_replay_file
 while [[ $((loop_index++)) -lt "${nb_loops}" ]]; do
     if [[ "${T}" -ne 0 ]]; then
         sleep_time_us="$(bc "${T}-($(now)%${T})" "0")"
