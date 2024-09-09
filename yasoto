@@ -12,26 +12,28 @@ echo_blue_ul () { echo -e "\e[4;34m${1:-}\e[m"; }
 echo_green   () { echo -e "\e[0;32m${1:-}\e[m"; }
 echo_yellow  () { echo -e "\e[0;33m${1:-}\e[m"; }
 echo_red     () { echo -e "\e[0;31m${1:-}\e[m"; }
-terminate    () { unlink "${bc_pipe}"; }
 uniq_id      () { echo "${1}" | cksum -a crc | tr ' ' '_'; }
 #~ is_int      () { [[ "${1}" =~ ^-?[0-9]+$ ]]; }
 #~ is_num      () { [[ "${1}" =~ ^-?[0-9]*\.?[0-9]+$ ]]; }
 rani         () { seq "-${1:-0}" "${2:-1}" 2>/dev/null | shuf -n1; }
+randomize    () { bc "${1}+(${1}*$(rani "${2}")/100)"; }
 
-declare   bc_pipe="/tmp/bc_pipe_${BASHPID}"
-init_bc   () { [[ -p "${bc_pipe}" ]] || mkfifo "${bc_pipe}"; exec 5> >(exec /usr/bin/bc -lq <(echo "scale=9") >"${bc_pipe}"); exec 6<"${bc_pipe}"; }
-bc        () { echo >&5 "scale=${2:-8};${1:-0}"; read -u 6 x; echo "${x}"; }
-
-randomize () {
-    bc "${1}+(${1}*$(rani "${2}")/100)"
+init () {
+    [[ -p "${bc_pipe}" ]] || mkfifo "${bc_pipe}"; exec 5> >(exec /usr/bin/bc -lq <(echo "scale=9") >"${bc_pipe}"); exec 6<"${bc_pipe}"
+    bc        () { echo >&5 "scale=${2:-8};${1:-0}"; read -u 6 x; echo "${x}"; }
 }
 
+declare bc_pipe="/tmp/bc_pipe_${BASHPID}"
 declare audio_output
 declare file_output
 declare sox_call
 declare output_directory
+declare smoothing_in_prct
+declare smoothing_out_prct
+declare randomize_prct
+declare create_replay_file
+declare output_directory
 
-### Environment modifiable variables ###
 audio_output="${YASOTO_AUDIO_OUTPUT:--t alsa}"             # Default ALSA device is the default audio output.
 file_output="${YASOTO_FILE_OUTPUT:--t flac}"
 sox_call="${YASOTO_SOX_CALL:-/usr/bin/sox -V0 -q}"         # How do we call SoX.
@@ -45,7 +47,7 @@ help () {
     cat<<EOF
 Usage: $(basename "${0}") <sample file> <tempo> <loops> <snap> <SoX effects> [ <pattern item> <pattern item> … ]
 
-Pattern item is a triplet of the form "length,delay,number"
+Pattern item is a 4-uplet of the form "length,delay,number,fx"
 
  - length: length of the loop in beats
  - delay:  delay before samples starts, 0 being no delay
@@ -61,7 +63,8 @@ EOF
 
 [[ "${#}" -lt 5 ]] && { help; exit 2; }
 
-init_bc
+init
+terminate () { unlink "${bc_pipe}"; }
 trap terminate EXIT
 
 declare    sample_file="${1:--n}"
@@ -80,13 +83,14 @@ declare replay_filename
 if [[ "${create_replay_file}" = "true" ]]; then
     #~ declare replay_filename="${output_directory}/$(now)-${BASHPID}-$(uniq_id "${sample_file}").sox"
     replay_filename="${output_directory}/$(uniq_id "${sample_file}").sox"
-    start_replay_file  () { echo -e "${sox_call} \\" >> "${replay_filename}"; }
-    add_to_replay_file () { echo -e "${1}" >> "${replay_filename}"; }
-    end_replay_file    () { echo -e "${audio_output}" >> "${replay_filename}"; }
+    start_replay_file   () { echo -e "${sox_call} \\" >> "${replay_filename}"; }
+    add_to_replay_file  () { echo -e "${1} \\" >> "${replay_filename}"; }
+    step_in_replay_file () { echo -e "${1} \\" >> "${replay_filename}"; }
+    end_replay_file     () { echo -e "${audio_output}" >> "${replay_filename}"; }
 else
-    start_replay_file  () { :; }
-    add_to_replay_file () { :; }
-    end_replay_file    () { :; }
+    start_replay_file   () { :; }
+    add_to_replay_file  () { :; }
+    end_replay_file     () { :; }
 fi
 
 eval_fx () {
@@ -108,7 +112,7 @@ eval_fx () {
 }
 
 sox_item () {
-    # Triplet: len,at,num
+    # 4-uplet: len,at,num,fx
     IFS=',' read -r len at num fx < <(echo "${1:-1,0,1,}")
     # TODO check args: they are two or three, "len" and "at" are decimal, "num" is integer. All three positive. "fx" isn’t SoX commands but ad-hoc effects which will generate some.
     at="$(bc "${at}%${len}" "0")" # In case provided "at" value is more than "len" ## TODO: Forbid the case? Turn to at=0? Would save a call to bc
@@ -126,28 +130,35 @@ sox_item () {
     fi
 }
 
-### Main loop ###
-declare -i sleep_time_us
-declare sleep_time
-declare -i loop_index=0
-[[ "${#}" -eq 0 ]] && set - '1,0,1' # No pattern item provided, put the simplest possible (length is 1 beat, start at 0, 1 note only)
-start_replay_file
-while [[ $((loop_index++)) -lt "${nb_loops}" ]]; do
+time_gap () {
+    declare -i sleep_time_us
     if [[ "${T}" -ne 0 ]]; then
         sleep_time_us="$(bc "${T}-($(now)%${T})" "0")"
-        sleep_time="$(bc "${sleep_time_us}/1000000")"
+        bc "${sleep_time_us}/1000000"
     else
-        sleep_time=0
+        echo -n "0"
     fi
-    for item in "${@}"; do
-        sox_cmd="${sox_call} \""${sample_file}"\" ${audio_output} "
-        sox_cmd+="$(sox_item "${item}") "
-        sox_cmd+="pad ${sleep_time} "
-        [[ "${more_sox}" ]] && sox_cmd+="${more_sox} "
-        eval "${sox_cmd}" &
-        echo_green "[${loop_index}/${nb_loops}] ${sox_cmd}" | cut -d' ' -f1,4,7- >&2
-        add_to_replay_file "<(${sox_cmd/ $audio_output / -t sox - }) \\"
-        wait -n -f
+}
+
+loop_through_patterns () {
+    declare    sleep_time
+    declare -i loop_index=0
+    while [[ $((loop_index++)) -lt "${nb_loops}" ]]; do
+        for item in "${@}"; do
+            sleep_time="$(time_gap)"
+            sox_cmd="${sox_call} \""${sample_file}"\" ${audio_output} "
+            sox_cmd+="$(sox_item "${item}") "
+            sox_cmd+="pad ${sleep_time} "
+            [[ "${more_sox}" ]] && sox_cmd+="${more_sox} "
+            eval "${sox_cmd}" &
+            echo_green "[${loop_index}/${nb_loops}] ${sox_cmd}" | cut -d' ' -f1,4,7- >&2
+            add_to_replay_file "<(${sox_cmd/ $audio_output / -t sox - })"
+            wait -n -f
+        done
     done
-done
+}
+
+
+start_replay_file
+loop_through_patterns "${@}"
 end_replay_file
