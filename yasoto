@@ -17,6 +17,7 @@ uniq_id      () { echo "${1}" | cksum -a crc | tr ' ' '_'; }
 #~ is_num      () { [[ "${1}" =~ ^-?[0-9]*\.?[0-9]+$ ]]; }
 rani         () { seq "-${1:-0}" "${2:-1}" 2>/dev/null | shuf -n1; }
 randomize    () { bc "${1}+(${1}*$(rani "${2}")/100)"; }
+is_in        () { [[ "${#}" -gt 1 ]] || return 1; for el in "${@:2}"; do [[ "${1}" =~ ${el} ]] && return 0; done; }
 
 init () {
     [[ -p "${bc_pipe}" ]] || mkfifo "${bc_pipe}"; exec 5> >(exec /usr/bin/bc -lq <(echo "scale=9") >"${bc_pipe}"); exec 6<"${bc_pipe}"
@@ -47,7 +48,7 @@ help () {
     cat<<EOF
 Usage: $(basename "${0}") <sample file> <tempo> <loops> <snap> <SoX effects> [ <pattern item> <pattern item> … ]
 
-Pattern item is a 4-uplet of the form "length,delay,number,fx"
+Pattern item is a quadruplet of the form "length,delay,number,fx"
 
  - length: length of the loop in beats
  - delay:  delay before samples starts, 0 being no delay
@@ -61,7 +62,8 @@ Examples:
 EOF
 }
 
-[[ "${#}" -lt 5 ]] && { help; exit 2; }
+is_in "^(-h|--help)$" "${@}" && { help; exit 0; }
+[[ "${#}" -ge 5 ]] || { help; exit 1; }
 
 init
 terminate () { unlink "${bc_pipe}"; }
@@ -81,7 +83,6 @@ declare smoothing_out="$(bc "${smoothing_out_prct}*${beat_length}/100")"
 declare replay_filename
 
 if [[ "${create_replay_file}" = "true" ]]; then
-    #~ declare replay_filename="${output_directory}/$(now)-${BASHPID}-$(uniq_id "${sample_file}").sox"
     replay_filename="${output_directory}/$(uniq_id "${sample_file}").sox"
     start_replay_file   () { echo -e "${sox_call} \\" >> "${replay_filename}"; }
     add_to_replay_file  () { echo -e "${1} \\" >> "${replay_filename}"; }
@@ -113,7 +114,7 @@ eval_fx () {
 
 sox_item () {
     # 4-uplet: len,at,num,fx
-    IFS=',' read -r len at num fx < <(echo "${1:-1,0,1,}")
+    IFS=',' read -r len at num fx < <(echo "${1:-1,0,1,''}")
     # TODO check args: they are two or three, "len" and "at" are decimal, "num" is integer. All three positive. "fx" isn’t SoX commands but ad-hoc effects which will generate some.
     at="$(bc "${at}%${len}" "0")" # In case provided "at" value is more than "len" ## TODO: Forbid the case? Turn to at=0? Would save a call to bc
     local len_len="$(randomize "$(bc "${len}*${beat_length}")" "${randomize_prct}")"
